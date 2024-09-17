@@ -1,10 +1,33 @@
 <!doctype html>
-<html lang="en">
+<html lang="pt-br">
   <head>
+    <style>
+      * {padding: 0; margin: 0; box-sizing: border-box; color: var(--black); font-synthesis: none; text-rendering: optimizeLegibility; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale;}
+      html > div {display: none}
+      body {display: flex; flex-direction: column; align-items: center; min-height: 100dvh; height: 100%; background-color: var(--white);}
+      div#root {height: 100%; }
+      @media (max-width: 640px) {div#root {width: 100%;}}
+      @media (min-width: 641px) {div#root {width: 100%; max-width: 1920px;}}
+      :root {
+        --base: min(3.75vw,1rem); --header-h: calc(var(--base) * 5); --footer-h: calc(var(--base) * 5);
+        --family-1: "Exo", sans-serif; --family-2: "Orbitron", sans-serif; --slow: 0.5s ease-in-out; --fast: 0.25s ease-in-out;
+        --white: #efedeb; --black: #131116; --color-1: #456990; --color-2: #68452E; --color-3: #F45B69;
+        --white-05: #efedebaa; --color-1-05: #456990aa;
+
+        --xs: calc(var(--base) * 0.5); --xxs: calc(var(--base) * 0.25); --xxxs: calc(var(--base) * 0.125);
+        --sm: calc(var(--base) * 0.75);--md: var(--base); --lg: calc(var(--base) * 1.5);
+        --xl: calc(var(--base) * 2); --xxl: calc(var(--base) * 2.5); --xxxl: calc(var(--base) * 3);
+      }
+    </style>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <link rel="icon" type="image/svg+xml" href="/logo.svg" />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Exo:ital,wght@0,100..900;1,100..900&family=Orbitron:wght@400..900&display=swap" rel="stylesheet">
+
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Vite + React + TS</title>
+    <title>Brasil Extractor</title>
   </head>
   <body>
     <div id="root"></div>
