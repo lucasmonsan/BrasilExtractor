@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import db, { salvarCidadesEstadosRegioesNoIndexedDB, salvarDistritosNoIndexedDB, salvarPaisesRegioesContinentesNoIndexedDB } from '../api/indexedDB';
 import { Main } from '../components/Containers';
 import { H1, P } from '../components/Texts';
-import axios from 'axios';
 
 export const HomePage = () => {
 	const [carregando, setCarregando] = useState<boolean>(false);
