@@ -1,11 +1,12 @@
 import Dexie from 'dexie';
 import axios from 'axios';
-import { BairroProps, CidadesProps, EstadoProps, PaisProps, RegiaoProps, RuaProps, RegiaoContinentalProps, ContinenteProps } from './interfaces';
+import { BairroProps, CidadesProps, ContinenteProps, DistritoProps, EstadoProps, PaisProps, RegiaoContinentalProps, RegiaoProps, RuaProps } from './interfaces';
 
 class MonsanMundiDB extends Dexie {
   ruas!: Dexie.Table<RuaProps, number>;
   bairros!: Dexie.Table<BairroProps, number>;
   cidades!: Dexie.Table<CidadesProps, number>;
+  distritos!: Dexie.Table<DistritoProps, number>;
   estados!: Dexie.Table<EstadoProps, number>;
   regioes!: Dexie.Table<RegiaoProps, number>;
   paises!: Dexie.Table<PaisProps, number>;
@@ -18,6 +19,7 @@ class MonsanMundiDB extends Dexie {
       ruas: 'id, nome, coordenada, cep',
       bairros: 'id, nome, coordenada, ruasIDs',
       cidades: 'id, nome, microrregiao, mesorregiao, regiao_imediata, regiao_intermediaria, coordenada, bairrosIDs',
+      distritos: 'id, nome, microrregiao, mesorregiao, regiao_imediata, regiao_intermediaria, coordenada, municipioId, bairrosIDs',
       estados: 'id, sigla, nome, coordenada, cidadesIDs',
       regioes: 'id, sigla, nome, coordenada, estadosIDs',
       paises: 'id, nome, iso_alpha_2, iso_alpha_3, coordenada, regioesIDs',
@@ -137,6 +139,7 @@ export const salvarCidadesEstadosRegioesNoIndexedDB = async () => {
           nome: uf.nome,
           coordenada: { lat: 0, lon: 0 },
           cidadesIDs: [],
+          distritosIDs: []
         });
       }
 
@@ -177,5 +180,29 @@ export const salvarCidadesEstadosRegioesNoIndexedDB = async () => {
     console.log("Dados salvos com sucesso no IndexedDB");
   } catch (error) {
     console.error("Erro ao salvar dados no IndexedDB:", error);
+  }
+};
+
+export const salvarDistritosNoIndexedDB = async () => {
+  try {
+    const response = await axios.get('https://servicodados.ibge.gov.br/api/v1/localidades/distritos');
+    const distritosData = response.data;
+
+    const distritosMapeados: DistritoProps[] = distritosData.map((distrito: any) => ({
+      id: distrito.id,
+      nome: distrito.nome,
+      microrregiao: distrito.municipio.microrregiao.nome,
+      mesorregiao: distrito.municipio.microrregiao.mesorregiao.nome,
+      regiao_imediata: distrito.municipio['regiao-imediata']?.nome || '',
+      regiao_intermediaria: distrito.municipio['regiao-imediata']?.['regiao-intermediaria']?.nome || '',
+      coordenada: { lat: 0, lon: 0 }, // Ajustar caso tenha coordenadas
+      municipioId: distrito.municipio.id,
+      bairrosIDs: [], // Vamos preencher depois se necessário
+    }));
+
+    await db.distritos.bulkPut(distritosMapeados, { allKeys: true });
+    console.log('Distritos salvos com sucesso no IndexedDB');
+  } catch (error) {
+    console.error('Erro ao salvar distritos no IndexedDB', error);
   }
 };

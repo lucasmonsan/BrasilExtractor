@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import db, { salvarCidadesEstadosRegioesNoIndexedDB, salvarPaisesRegioesContinentesNoIndexedDB } from '../api/indexedDB';
+import db, { salvarCidadesEstadosRegioesNoIndexedDB, salvarDistritosNoIndexedDB, salvarPaisesRegioesContinentesNoIndexedDB } from '../api/indexedDB';
 import { Main } from '../components/Containers';
 import { H1, P } from '../components/Texts';
 import axios from 'axios';
@@ -12,6 +12,7 @@ export const HomePage = () => {
 		regioesContinentais: 0,
 		continentes: 0,
 		cidades: 0,
+		distritos: 0,
 		estados: 0,
 		regioes: 0,
 	});
@@ -21,6 +22,7 @@ export const HomePage = () => {
 		const regioesContinentaisCount = await db.regioes_continentais.count();
 		const continentesCount = await db.continentes.count();
 		const cidadesCount = await db.cidades.count();
+		const distritosCount = await db.distritos.count();
 		const estadosCount = await db.estados.count();
 		const regioesCount = await db.regioes.count();
 
@@ -29,6 +31,7 @@ export const HomePage = () => {
 			regioesContinentais: regioesContinentaisCount,
 			continentes: continentesCount,
 			cidades: cidadesCount,
+			distritos: distritosCount,
 			estados: estadosCount,
 			regioes: regioesCount,
 		});
@@ -40,6 +43,7 @@ export const HomePage = () => {
 			try {
 				await salvarPaisesRegioesContinentesNoIndexedDB();
 				await salvarCidadesEstadosRegioesNoIndexedDB();
+				await salvarDistritosNoIndexedDB(); // Salva os distritos
 				await contarItens();
 			} catch (err) {
 				console.error('Erro ao salvar dados no IndexedDB', err);
@@ -49,7 +53,6 @@ export const HomePage = () => {
 			}
 		};
 
-		// Chama a função quando o componente é montado
 		salvarDadosNoIndexedDB();
 	}, []);
 
@@ -67,6 +70,7 @@ export const HomePage = () => {
 					<P>Regiões Continentais: {contagens.regioesContinentais}</P>
 					<P>Continentes: {contagens.continentes}</P>
 					<P>Cidades: {contagens.cidades}</P>
+					<P>Distritos: {contagens.distritos}</P>
 					<P>Estados: {contagens.estados}</P>
 					<P>Regiões: {contagens.regioes}</P>
 				</div>

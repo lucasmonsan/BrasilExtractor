@@ -14,6 +14,17 @@ interface BairroProps {
   coordenada: CoordenadaProps;
   ruasIDs: number[];
 }
+interface DistritoProps {
+  id: number;
+  nome: string;
+  microrregiao: string;
+  mesorregiao: string;
+  regiao_imediata: string;
+  regiao_intermediaria: string;
+  coordenada: CoordenadaProps;
+  municipioId: number;
+  bairrosIDs: number[];
+}
 interface CidadesProps {
   id: number;
   nome: string;
@@ -30,6 +41,7 @@ interface EstadoProps {
   nome: string;
   coordenada: CoordenadaProps;
   cidadesIDs: number[];
+  distritosIDs: number[];
 }
 interface RegiaoProps {
   id: number;
@@ -59,4 +71,4 @@ interface ContinenteProps {
   regioes_continentais: number[];
 }
 
-export type { RuaProps, BairroProps, CidadesProps, EstadoProps, RegiaoProps, PaisProps, RegiaoContinentalProps, ContinenteProps }
+export type { RuaProps, BairroProps, DistritoProps, CidadesProps, EstadoProps, RegiaoProps, PaisProps, RegiaoContinentalProps, ContinenteProps }
