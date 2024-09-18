@@ -72,3 +72,35 @@ interface ContinenteProps {
 }
 
 export type { RuaProps, BairroProps, DistritoProps, CidadesProps, EstadoProps, RegiaoProps, PaisProps, RegiaoContinentalProps, ContinenteProps }
+
+/***/
+
+export interface DadosComparativos {
+  id: { municipioId: number; distritoId: number };
+  mesorregiao: { municipio: string; distrito: string };
+  microrregiao: { municipio: string; distrito: string };
+  nome: string;
+  regiaoImediata: { municipio: string; distrito: string };
+  regiaoIntermediaria: { municipio: string; distrito: string };
+}
+export interface NominatimAddress {
+  place_id: number;
+  licence: string;
+  osm_type: string;
+  osm_id: number;
+  boundingbox: string[];
+  lat: string;
+  lon: string;
+  display_name: string;
+  class: string;
+  type: string;
+  importance: number;
+  icon?: string;
+  address: {
+    city?: string;
+    county?: string;
+    state: string;
+    country: string;
+    country_code: string;
+  };
+}

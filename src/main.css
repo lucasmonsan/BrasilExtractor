@@ -91,7 +91,7 @@
 .padd-xxs {padding: var(--xxs);}
 .padd-t-md {padding-top: var(--md);}
 .padd-t-header {padding-top: var(--header-h);}
-.padd-lr-xxxl {padding-left: var(--xxxl); padding-right: var(--xxxl);}
+.padd-lr-xxxl {padding-left: var(--xxxl) !important; padding-right: var(--xxxl) !important;}
 .padd-lr-md {padding-left: var(--md); padding-right: var(--md);}
 .padd-lr-xs {padding-left: var(--xs); padding-right: var(--xs);}
 .padd-tb-xxs {padding-top: var(--xxs); padding-bottom: var(--xxs);}
