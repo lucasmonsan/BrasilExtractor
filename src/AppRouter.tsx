@@ -2,7 +2,6 @@ import { AnimatePresence } from "framer-motion"
 import { Navigate, Outlet, Route, Routes, useLocation } from "react-router-dom"
 import { HomePage } from "./pages/HomePage"
 import { SplashPage } from "./pages/SplashPage"
-import { ReviewFormPage } from "./pages/ReviewFormPage"
 
 function AppRouter() {
 	const location = useLocation()
@@ -12,7 +11,6 @@ function AppRouter() {
 			<Routes location={location} key={location.pathname}>
 				<Route path="*" element={<SplashRedirect />}>
 					<Route index element={<HomePage />} />
-					<Route path="review" element={<ReviewFormPage />} />
 				</Route>
 				<Route path="splash" element={<SplashPage />} />
 			</Routes>

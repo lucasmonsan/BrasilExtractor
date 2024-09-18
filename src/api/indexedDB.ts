@@ -1,106 +1,181 @@
-import Dexie, { Table } from 'dexie';
+import Dexie from 'dexie';
+import axios from 'axios';
+import { BairroProps, CidadesProps, EstadoProps, PaisProps, RegiaoProps, RuaProps, RegiaoContinentalProps, ContinenteProps } from './interfaces';
 
-interface RegiaoProps {
-  id: number;
-  sigla: string;
-  nome: string;
-}
-interface MesorregiaoProps {
-  id: number;
-  nome: string;
-}
-interface UFProps extends RegiaoProps { }
-interface MicrorregiaoProps extends MesorregiaoProps { }
-interface RegiaoIntermediariaProps extends MesorregiaoProps { }
-interface RegiaoImediataProps extends MesorregiaoProps { }
-interface MunicipioProps {
-  id: number;
-  nome: string;
-  microrregiao: MicrorregiaoProps;
-  mesorregiao: MesorregiaoProps;
-  UF: UFProps;
-  regiao_imediata: RegiaoImediataProps;
-  regiao_intermediaria: RegiaoIntermediariaProps;
-  regiao: RegiaoProps;
-  coordenadas: {
-    lat: string;
-    lon: string;
-  }
-}
-export interface SearchResult {
-  place_id: number;
-  display_name: string;
-  regiao_imediata: string;
-  regiao_intermediaria: string;
-  UF: string;
-  lat: string;
-  lon: string;
-}
-
-class MunicipiosDB extends Dexie {
-  municipios!: Table<MunicipioProps>;
+class MonsanMundiDB extends Dexie {
+  ruas!: Dexie.Table<RuaProps, number>;
+  bairros!: Dexie.Table<BairroProps, number>;
+  cidades!: Dexie.Table<CidadesProps, number>;
+  estados!: Dexie.Table<EstadoProps, number>;
+  regioes!: Dexie.Table<RegiaoProps, number>;
+  paises!: Dexie.Table<PaisProps, number>;
+  regioes_continentais!: Dexie.Table<RegiaoContinentalProps, number>;
+  continentes!: Dexie.Table<ContinenteProps, number>;
 
   constructor() {
-    super('municipios-db');
+    super('MonsanMundiDB');
     this.version(1).stores({
-      municipios: 'id', // Índice para busca por ID do município
+      ruas: 'id, nome, coordenada, cep',
+      bairros: 'id, nome, coordenada, ruasIDs',
+      cidades: 'id, nome, microrregiao, mesorregiao, regiao_imediata, regiao_intermediaria, coordenada, bairrosIDs',
+      estados: 'id, sigla, nome, coordenada, cidadesIDs',
+      regioes: 'id, sigla, nome, coordenada, estadosIDs',
+      paises: 'id, nome, iso_alpha_2, iso_alpha_3, coordenada, regioesIDs',
+      regioes_continentais: 'id, nome, paises, coordenada',
+      continentes: 'id, nome, regioes_continentais, coordenada',
     });
   }
 }
 
-const db = new MunicipiosDB();
-export { db };
-export type { MunicipioProps };
+const db = new MonsanMundiDB();
+export default db;
 
-const normalizarTexto = (texto: string): string => {
-  return texto.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
-};
+/***/
 
-export async function salvarMunicipiosNoIndexedDB(municipios: MunicipioProps[]) {
+export const salvarPaisesRegioesContinentesNoIndexedDB = async () => {
   try {
-    // Utiliza bulkAdd para adicionar múltiplos municípios
-    await db.municipios.bulkAdd(municipios);
-    console.log('Municípios salvos no IndexedDB com sucesso!', municipios);
-  } catch (error) {
-    console.error('Erro ao salvar municípios no IndexedDB:', error);
-  }
-}
+    const response = await axios.get("https://servicodados.ibge.gov.br/api/v1/localidades/paises");
+    const paisesData = response.data;
 
-export const buscarMunicipiosNoIndexedDB = async (query: string): Promise<SearchResult[]> => {
-  try {
-    const queryNormalizada = normalizarTexto(query);
-    const municipios = await db.municipios.toArray();
+    const paisesMapeados: PaisProps[] = paisesData.map((pais: any) => ({
+      id: pais.id.M49,
+      nome: pais.nome,
+      iso_alpha_2: pais.id['ISO-ALPHA-2'],
+      iso_alpha_3: pais.id['ISO-ALPHA-3'],
+      coordenada: { lat: 0, lon: 0 }, // Ajustar caso tenha coordenadas
+      regioesIDs: [] // Vamos preencher depois se necessário
+    }));
 
-    const converterParaSearchResult = (municipio: MunicipioProps): SearchResult => ({ // Função para converter MunicipioProps para SearchResult
-      place_id: municipio.id,
-      display_name: municipio.nome,
-      lat: municipio.coordenadas.lat,
-      lon: municipio.coordenadas.lon,
-      regiao_imediata: municipio.regiao_imediata.nome,
-      regiao_intermediaria: municipio.regiao_intermediaria.nome,
-      UF: municipio.UF.sigla
+    const regioesContinentaisMapeadosSet = new Map<number, RegiaoContinentalProps>();
+    const continentesMapeadosSet = new Map<number, ContinenteProps>();
+
+    paisesData.forEach((pais: any) => {
+      const subRegiao = pais['sub-regiao'];
+      const regiao = subRegiao?.regiao;
+
+      if (subRegiao) {
+        const subRegiaoId = subRegiao.id.M49;
+
+        if (!regioesContinentaisMapeadosSet.has(subRegiaoId)) {
+          regioesContinentaisMapeadosSet.set(subRegiaoId, {
+            id: subRegiaoId,
+            nome: subRegiao.nome,
+            coordenada: { lat: 0, lon: 0 },
+            paises: [pais.id.M49]
+          });
+        } else {
+          regioesContinentaisMapeadosSet.get(subRegiaoId)?.paises.push(pais.id.M49);
+        }
+
+        if (regiao) {
+          const regiaoId = regiao.id.M49;
+
+          if (!continentesMapeadosSet.has(regiaoId)) {
+            continentesMapeadosSet.set(regiaoId, {
+              id: regiaoId,
+              nome: regiao.nome,
+              coordenada: { lat: 0, lon: 0 },
+              regioes_continentais: [subRegiaoId]
+            });
+          } else {
+            const continente = continentesMapeadosSet.get(regiaoId);
+            if (continente && !continente.regioes_continentais.includes(subRegiaoId)) {
+              continente.regioes_continentais.push(subRegiaoId);
+            }
+          }
+        }
+      }
     });
 
-    const resultadosExatos = municipios.filter(municipio => normalizarTexto(municipio.nome).includes(queryNormalizada)).map(converterParaSearchResult); // Filtragem de resultados exatos
+    const regioesContinentaisMapeados = Array.from(regioesContinentaisMapeadosSet.values());
+    const continentesMapeados = Array.from(continentesMapeadosSet.values());
 
-    const resultadosUnicos = new Map<number, SearchResult>(); // Combine os resultados exatos, mantendo apenas os exatos e ordenando por nome
-    resultadosExatos.forEach(result => resultadosUnicos.set(result.place_id, result));
+    // Usando bulkPut para garantir que não haverá duplicatas
+    await db.paises.bulkPut(paisesMapeados, { allKeys: true });
+    console.log('Paises salvos com sucesso no IndexedDB');
 
-    const resultadosOrdenados = Array.from(resultadosUnicos.values()).sort((a, b) => a.display_name.localeCompare(b.display_name)); // Converta Map para Array e ordene por nome
+    await db.regioes_continentais.bulkPut(regioesContinentaisMapeados, { allKeys: true });
+    console.log('Regiões continentais salvas com sucesso no IndexedDB');
 
-    return resultadosOrdenados;
+    await db.continentes.bulkPut(continentesMapeados, { allKeys: true });
+    console.log('Continentes salvos com sucesso no IndexedDB');
   } catch (error) {
-    console.error("Erro ao buscar municípios no IndexedDB:", error);
-    return [];
+    console.error('Erro ao salvar países, regiões continentais ou continentes no IndexedDB', error);
   }
 };
 
-export async function atualizarMunicipioNoIndexedDB(municipioAtualizado: MunicipioProps) {
+export const salvarCidadesEstadosRegioesNoIndexedDB = async () => {
   try {
-    // Atualiza o município específico no IndexedDB
-    await db.municipios.put(municipioAtualizado);
-    console.log('Município atualizado com sucesso no IndexedDB!', municipioAtualizado);
+    const response = await axios.get("https://servicodados.ibge.gov.br/api/v1/localidades/municipios");
+    const municipios = response.data;
+
+    const cidades: CidadesProps[] = [];
+    const estados: EstadoProps[] = [];
+    const regioes: RegiaoProps[] = [];
+
+    municipios.forEach((municipio: any) => {
+      const microrregiao = municipio.microrregiao;
+      const mesorregiao = microrregiao.mesorregiao;
+      const uf = mesorregiao.UF;
+
+      const regiao = uf.regiao;
+
+      if (regiao && !regioes.some(r => r.id === regiao.id)) {
+        regioes.push({
+          id: regiao.id,
+          sigla: regiao.sigla,
+          nome: regiao.nome,
+          coordenada: { lat: 0, lon: 0 },
+          estadosIDs: [],
+        });
+      }
+
+      if (uf && !estados.some(e => e.id === uf.id)) {
+        estados.push({
+          id: uf.id,
+          sigla: uf.sigla,
+          nome: uf.nome,
+          coordenada: { lat: 0, lon: 0 },
+          cidadesIDs: [],
+        });
+      }
+
+      cidades.push({
+        id: municipio.id,
+        nome: municipio.nome,
+        microrregiao: microrregiao.nome,
+        mesorregiao: mesorregiao.nome,
+        regiao_imediata: municipio.regiao_imediata?.nome || '',
+        regiao_intermediaria: municipio.regiao_imediata?.regiao_intermediaria?.nome || '',
+        coordenada: { lat: 0, lon: 0 },
+        bairrosIDs: [],
+      });
+
+      const estadoIndex = estados.findIndex(e => e.id === uf.id);
+      if (estadoIndex !== -1) {
+        estados[estadoIndex].cidadesIDs.push(municipio.id);
+      }
+
+      const regiaoIndex = regioes.findIndex(r => r.id === regiao.id);
+      if (regiaoIndex !== -1) {
+        if (!regioes[regiaoIndex].estadosIDs.includes(uf.id)) {
+          regioes[regiaoIndex].estadosIDs.push(uf.id);
+        }
+      }
+    });
+
+    // Usando bulkPut para garantir que não haverá duplicatas
+    await db.regioes.bulkPut(regioes, { allKeys: true });
+    console.log('Regiões salvas com sucesso no IndexedDB');
+
+    await db.estados.bulkPut(estados, { allKeys: true });
+    console.log('Estados salvos com sucesso no IndexedDB');
+
+    await db.cidades.bulkPut(cidades, { allKeys: true });
+    console.log('Cidades salvas com sucesso no IndexedDB');
+
+    console.log("Dados salvos com sucesso no IndexedDB");
   } catch (error) {
-    console.error('Erro ao atualizar o município no IndexedDB:', error);
+    console.error("Erro ao salvar dados no IndexedDB:", error);
   }
-}
+};
